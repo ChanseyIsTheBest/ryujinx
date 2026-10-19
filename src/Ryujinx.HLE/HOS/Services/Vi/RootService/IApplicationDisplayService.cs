@@ -178,10 +178,10 @@ namespace Ryujinx.HLE.HOS.Services.Vi.RootService
                 return ResultCode.InvalidValue;
             }
 
-            if (!_openDisplays.TryAdd((ulong)displayId, new DisplayState()))
-            {
-                return ResultCode.AlreadyOpened;
-            }
+            // banjo-nx (2026-10-19): the console opens a display that is already open again (libnx's default window
+            // holds "Default" open, and a game's vsync thread opens it once more for its vsync event: banjo-nx's
+            // display_sync, futari-nx's vblank thread); Ryujinx answered AlreadyOpened, the console the same id.
+            _openDisplays.TryAdd((ulong)displayId, new DisplayState());
 
             context.ResponseData.Write((ulong)displayId);
 

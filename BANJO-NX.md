@@ -18,6 +18,10 @@ repository's release as a zip.
   the audio volume starts at 0, for the automated test runs (`Program.QuietStart`; `ConsoleHelper.MinimizeConsoleWindow`;
   `ConfigurationState.CreateHleConfiguration`; `AppHost`; `MainWindow`). Set the environment variable
   `RYUBING_INTERACTIVE=1` for the normal behaviour.
+- **A display opened again** (2026-10-19): `IApplicationDisplayService.OpenDisplayImpl` returns the same id for a
+  display the session already holds open, as the console does, instead of `AlreadyOpened`: libnx's default window
+  holds "Default" open, and a game's vsync thread opens it again for `viGetDisplayVsyncEvent` (banjo-nx's
+  `display_sync`, futari-nx's vblank thread).
 - Earlier fixes for homebrew with a big address space (from the first banjo-nx emulator runs): `AllocSpace` with a
   fixed offset returned the free block's start instead of the offset; `Map/UnmapProcess(Code)Memory` and
   `SetProcessMemoryPermission` accept the current-process pseudo-handle; DMA remap constant fills in 2D form; some
