@@ -35,6 +35,7 @@ namespace Ryujinx.HLE.HOS.Services.SurfaceFlinger
 
         private int _swapInterval;
         private int _swapIntervalDelay;
+        private long _nextVsyncTicks; // banjo-nx (2026-10-20): the next display refresh with game vsync off
 
         private readonly Lock _lock = new();
 
@@ -309,9 +310,38 @@ namespace Ryujinx.HLE.HOS.Services.SurfaceFlinger
                 {
                     Compose();
 
-                    _device.System?.SignalVsync();
+                    // banjo-nx (2026-10-20): the display's vsync event at the display's refresh, as on the console,
+                    // not after each composition. With game vsync off the event followed the game's own presents, and
+                    // a game pacing its frames by it (banjo-nx's banjo_display_sync) paced them by its presents and
+                    // stalled. The compositor still composes as soon as a frame is queued.
+                    long vsyncPeriod = ((Stopwatch.Frequency / _device.TargetVSyncInterval) * 100) / _device.TickScalar;
+                    long now = PerformanceCounter.ElapsedTicks;
 
-                    _nextFrameEvent.WaitOne(17);
+                    if (_nextVsyncTicks == 0 || now - _nextVsyncTicks > vsyncPeriod * 3)
+                    {
+                        _nextVsyncTicks = now; // the first refresh, or one after a long pause: the grid starts again
+                    }
+
+                    if (now >= _nextVsyncTicks)
+                    {
+                        // Once, on the grid: a late wake skips the refreshes it missed rather than signalling a burst.
+                        _device.System?.SignalVsync();
+                        _nextVsyncTicks += ((now - _nextVsyncTicks) / vsyncPeriod + 1) * vsyncPeriod;
+                    }
+
+                    // Until the next refresh, or a frame queued before it.
+                    long untilVsync = _nextVsyncTicks - PerformanceCounter.ElapsedTicks;
+                    int waitMs = (int)Math.Clamp(untilVsync / _1msTicks, 0, 17);
+
+                    if (waitMs > 0)
+                    {
+                        _nextFrameEvent.WaitOne(waitMs);
+                    }
+                    else if (untilVsync > 0)
+                    {
+                        PreciseSleepHelper.SpinWaitUntilTimePoint(_nextVsyncTicks);
+                    }
+
                     lastTicks = ticks;
                 }
                 else

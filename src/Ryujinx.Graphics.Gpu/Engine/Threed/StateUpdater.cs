@@ -1014,6 +1014,19 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed
                     };
                 }
 
+                // banjo-nx (2026-10-20, from the Peggle 2 port): VERTEX_ATTRIB_FORMAT bit 31 swaps R and B (deko3d's
+                // DkVtxAttribState.isBgra, which plume sets for every D3DCOLOR vertex colour); UnpackFormat masks it off,
+                // so vertex colours came out R/B swapped here while the console honours it.
+                if ((vertexAttrib.Attribute & 0x80000000u) != 0)
+                {
+                    format = format switch
+                    {
+                        Format.R8G8B8A8Unorm => Format.B8G8R8A8Unorm,
+                        Format.R10G10B10A2Unorm => Format.B10G10R10A2Unorm,
+                        _ => format,
+                    };
+                }
+
                 vertexAttribs[index] = new VertexAttribDescriptor(
                     bufferIndex,
                     vertexAttrib.UnpackOffset(),

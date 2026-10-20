@@ -34,6 +34,13 @@ namespace ARMeilleure.Instructions
                 case 0b11_011_0000_0000_111:
                     info = typeof(NativeInterface).GetMethod(nameof(NativeInterface.GetDczidEl0));
                     break;
+                case 0b11_011_0010_0101_001:
+                    // banjo-nx (2026-10-20, from the Futari port): GCSPR_EL0, the guarded control stack pointer. GCC
+                    // 16's libgcc unwinder reads it behind a `chkfeat` test that skips it without GCS (as on the
+                    // Switch); translation reaches the skipped block anyway, and this threw for every C++ exception.
+                    // No GCS here: 0.
+                    SetIntOrZR(context, op.Rt, Const(0UL));
+                    return;
                 case 0b11_011_0100_0010_000:
                     EmitGetNzcv(context);
                     return;
