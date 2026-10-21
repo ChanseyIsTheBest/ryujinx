@@ -195,7 +195,22 @@ namespace Ryujinx.HLE.HOS.Applets
                 _keyboardForegroundConfig.StringLengthMax = 100;
             }
 
-            if (_device.UIHandler == null)
+            // banjo-nx test patch (2026-10-21): RYUJINX_SWKBD_AUTO answers without the dialog ("__cancel__" cancels).
+            string swkbdAuto = Environment.GetEnvironmentVariable("RYUJINX_SWKBD_AUTO");
+            Logger.Info?.Print(LogClass.Application,
+                $"swkbd request: mode {_keyboardForegroundConfig.Mode} header \"{_keyboardForegroundConfig.HeaderText}\" " +
+                $"sub \"{_keyboardForegroundConfig.SubtitleText}\" guide \"{_keyboardForegroundConfig.GuideText}\" " +
+                $"initial \"{initialText}\" min {_keyboardForegroundConfig.StringLengthMin} " +
+                $"max {_keyboardForegroundConfig.StringLengthMax} password {_keyboardForegroundConfig.PasswordMode} " +
+                $"newline {_keyboardForegroundConfig.UseNewLine} form {_keyboardForegroundConfig.InputFormMode} " +
+                $"left key '{_keyboardForegroundConfig.LeftOptionalSymbolKey}' auto {(swkbdAuto ?? "(dialog)")}");
+            if (swkbdAuto != null)
+            {
+                bool cancel = swkbdAuto == "__cancel__";
+                _textValue = cancel ? (initialText ?? "") : swkbdAuto;
+                _lastResult = cancel ? KeyboardResult.Cancel : KeyboardResult.Accept;
+            }
+            else if (_device.UIHandler == null)
             {
                 Logger.Warning?.Print(LogClass.Application, "GUI Handler is not set. Falling back to default");
 

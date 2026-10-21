@@ -38,6 +38,11 @@ repository's release as a zip.
   stack pointer) as 0. GCC 16's libgcc unwinder reads it behind a `chkfeat` test that skips it without GCS; the
   translator reached the skipped block anyway and threw "Unknown MRS 0xD53B2521", so every C++ exception (even a caught
   one) stopped the emulator (`InstEmitSystem.Mrs`).
+- **Software keyboard answered for test runs** (2026-10-21, banjo-nx package 36z5): with `RYUJINX_SWKBD_AUTO` set,
+  `SoftwareKeyboardApplet` answers without the dialog (that text, accepted; `__cancel__` cancels with the initial
+  text), so an unattended run can check a game's keyboard path. Every request is logged ("swkbd request: mode, header,
+  sub, guide, initial text, min/max, password, newline, form, left key"). Without the variable the dialog shows as
+  before.
 - Earlier fixes for homebrew with a big address space (from the first banjo-nx emulator runs): `AllocSpace` with a
   fixed offset returned the free block's start instead of the offset; `Map/UnmapProcess(Code)Memory` and
   `SetProcessMemoryPermission` accept the current-process pseudo-handle; DMA remap constant fills in 2D form; some
